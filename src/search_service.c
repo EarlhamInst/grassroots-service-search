@@ -916,11 +916,11 @@ static bool IsZenodoSearchEnabled (const char *facet_s, const SearchServiceData 
 
 							json_object_foreach (data_p -> ssd_zenodo_resource_mappings_p, key_s, value_p)
 								{
-									const char *indexing_type_s = GetJSONString (value_p, INDEXING_TYPE_S);
+									const char *name_s = GetJSONString (value_p, CONTEXT_PREFIX_SCHEMA_ORG_S "name");
 
-									if (indexing_type_s)
+									if (name_s)
 										{
-											if (strcmp (indexing_type_s, facet_s) == 0)
+											if (strcmp (name_s, facet_s) == 0)
 												{
 													return true;
 												}

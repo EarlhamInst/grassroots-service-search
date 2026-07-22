@@ -215,13 +215,14 @@ static json_t *ParseZenodoResults (const json_t *zenodo_results_p, LuceneTool *l
 static json_t *GetResult (const json_t *zenodo_result_p, LuceneTool *lucene_p, const SearchServiceData *data_p)
 {
 	json_t *grassroots_result_p = NULL;
-	const char *doi_url_s = GetJSONString (zenodo_result_p, "doi");
+	const char *doi_s = GetJSONString (zenodo_result_p, "doi");
 
-	if (doi_url_s)
+	if (doi_s)
 		{
-			char *url_s = ConcatenateVarargsStrings (data_p -> ssd_zenodo_url_s, doi_url_s, NULL);
+			const char *doi_url_s = GetJSONString (zenodo_result_p, "doi_url"); //ConcatenateVarargsStrings (data_p -> ssd_zenodo_url_s, doi_url_s, NULL);
+			//char *url_s = ConcatenateVarargsStrings (data_p -> ssd_zenodo_url_s, doi_url_s, NULL);
 
-			if (url_s)
+			if (doi_url_s)
 				{
 					const char *title_s = GetJSONString (zenodo_result_p, "title");
 
@@ -311,9 +312,9 @@ static json_t *GetResult (const json_t *zenodo_result_p, LuceneTool *lucene_p, c
 												{
 													if ((datatype_description_s == NULL) || (SetJSONString (grassroots_result_p, INDEXING_TYPE_DESCRIPTION_S, datatype_description_s)))
 														{
-															if (SetJSONString (grassroots_result_p, LUCENE_ID_S, doi_url_s))
+															if (SetJSONString (grassroots_result_p, LUCENE_ID_S, doi_s))
 																{
-																	if (SetJSONString (grassroots_result_p, WEB_SERVICE_URL_S, url_s))
+																	if (SetJSONString (grassroots_result_p, WEB_SERVICE_URL_S, doi_url_s))
 																		{
 																			if (SetJSONString (grassroots_result_p, INDEXING_NAME_S, title_s))
 																				{
@@ -429,12 +430,12 @@ static json_t *GetResult (const json_t *zenodo_result_p, LuceneTool *lucene_p, c
 																		}
 																	else
 																		{
-																			PrintJSONToErrors (STM_LEVEL_WARNING, __FILE__, __LINE__, grassroots_result_p, "Failed to set \"%s\": \"%s\"", WEB_SERVICE_URL_S, doi_url_s);
+																			PrintJSONToErrors (STM_LEVEL_WARNING, __FILE__, __LINE__, grassroots_result_p, "Failed to set \"%s\": \"%s\"", WEB_SERVICE_URL_S, doi_s);
 																		}
 																}
 															else
 																{
-																	PrintJSONToErrors (STM_LEVEL_WARNING, __FILE__, __LINE__, grassroots_result_p, "Failed to set \"%s\": \"%s\"", LUCENE_ID_S, doi_url_s);
+																	PrintJSONToErrors (STM_LEVEL_WARNING, __FILE__, __LINE__, grassroots_result_p, "Failed to set \"%s\": \"%s\"", LUCENE_ID_S, doi_s);
 																}
 														}
 													else
@@ -469,12 +470,11 @@ static json_t *GetResult (const json_t *zenodo_result_p, LuceneTool *lucene_p, c
 							PrintJSONToErrors (STM_LEVEL_WARNING, __FILE__, __LINE__, zenodo_result_p, "no title key");
 						}
 
-					FreeCopiedString (url_s);
-				}		/* if (url_s) */
+				}		/* if (doi_url_s) */
 
 
 
-		}		/* if (doi_url_s) */
+		}		/* if (url_s) */
 	else
 		{
 			PrintJSONToErrors (STM_LEVEL_WARNING, __FILE__, __LINE__, zenodo_result_p, "no id key");
