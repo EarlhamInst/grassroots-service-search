@@ -51,7 +51,7 @@ static const char * const S_ANY_FACET_S = "<ANY>";
 
 
 static const uint32 S_DEFAULT_PAGE_NUMBER = 0;
-static const uint32 S_DEFAULT_PAGE_SIZE = 500;
+static const uint32 S_DEFAULT_PAGE_SIZE = 5000;
 
 
 static Service *GetSearchService (GrassrootsServer *grassroots_p);
