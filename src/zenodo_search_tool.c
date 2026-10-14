@@ -41,11 +41,28 @@ json_t *SearchZenodo (const char *query_s, LuceneTool *lucene_p, const SearchSer
 
 					if (escaped_query_s)
 						{
-							if (AppendStringsToByteBuffer (buffer_p, data_p -> ssd_zenodo_url_s, "/api/records?access_token=", data_p -> ssd_zenodo_api_token_s, "&q=", escaped_query_s, NULL))
+							bool appended_query_flag = AppendStringsToByteBuffer (buffer_p, data_p -> ssd_zenodo_url_s, "/api/records?q=", escaped_query_s, NULL);
+
+							/* we no longer need the escaped query so let's delete it */
+							FreeURLEscapedString (escaped_query_s);
+
+							if (appended_query_flag)
 								{
 									bool success_flag = true;
 
-									if (data_p -> ssd_zenodo_community_s)
+									/*
+									 * The token is optional so only add it if it has been set, as a NULL
+									 * would terminate the varargs list early
+									 */
+									if (data_p -> ssd_zenodo_api_token_s)
+										{
+											if (! (AppendStringsToByteBuffer (buffer_p, "&access_token=", data_p -> ssd_zenodo_api_token_s, NULL)))
+												{
+													success_flag = false;
+												}
+										}
+
+									if (success_flag && (data_p -> ssd_zenodo_community_s))
 										{
 											if (! (AppendStringsToByteBuffer (buffer_p, "&communities=", data_p -> ssd_zenodo_community_s, NULL)))
 												{
@@ -53,9 +70,6 @@ json_t *SearchZenodo (const char *query_s, LuceneTool *lucene_p, const SearchSer
 												}
 										}
 
-
-									/* we no longer need the escaped query so let's delete it */
-									FreeURLEscapedString (escaped_query_s);
 
 									if (success_flag)
 										{
@@ -167,8 +181,7 @@ static json_t *ParseZenodoResults (const json_t *zenodo_results_p, LuceneTool *l
 												{
 													if (json_array_append_new (grassroots_results_p, grassroots_result_p) != 0)
 														{
-															PrintJSONToErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, grassroots_result_p, "Failed to add grassroots result");
-															json_decref (grassroots_result_p);
+															PrintJSONToErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, zenodo_hit_p, "Failed to add grassroots result");
 														}
 												}
 											else
@@ -447,16 +460,16 @@ static json_t *GetResult (const json_t *zenodo_result_p, LuceneTool *lucene_p, c
 												{
 													PrintJSONToErrors (STM_LEVEL_WARNING, __FILE__, __LINE__, grassroots_result_p, "Failed to set \"%s\": \"%s\"", INDEXING_TYPE_S, indexing_type_s);
 												}
-
-											if (!success_flag)
-												{
-													json_decref (grassroots_result_p);
-													grassroots_result_p = NULL;
-												}
 										}		/* if (metadata_p) */
 									else
 										{
 											PrintJSONToErrors (STM_LEVEL_WARNING, __FILE__, __LINE__, zenodo_result_p, "no metadata");
+										}
+
+									if (!success_flag)
+										{
+											json_decref (grassroots_result_p);
+											grassroots_result_p = NULL;
 										}
 								}
 							else

@@ -44,12 +44,14 @@ json_t *SearchCKAN (const char *query_s, LuceneTool *lucene_p, const SearchServi
 
 					if (escaped_query_s)
 						{
-							if (AppendStringsToByteBuffer (buffer_p, data_p -> ssd_ckan_url_s, "/api/3/action/package_search?q=", escaped_query_s, NULL))
+							bool appended_query_flag = AppendStringsToByteBuffer (buffer_p, data_p -> ssd_ckan_url_s, "/api/3/action/package_search?q=", escaped_query_s, NULL);
+
+							/* we no longer need the escaped query so let's delete it */
+							FreeURLEscapedString (escaped_query_s);
+
+							if (appended_query_flag)
 								{
 									bool success_flag = true;
-
-									/* we no longer need the escaped query so let's delete it */
-									FreeURLEscapedString (escaped_query_s);
 
 									if (data_p -> ssd_ckan_filters_p)
 										{
@@ -183,46 +185,35 @@ static json_t *ParseCKANResults (const json_t *ckan_results_p, LuceneTool *lucen
 				{
 					if (json_is_array (results_p))
 						{
-							json_t *res_p = json_object ();
+							json_t *grassroots_results_p = json_array ();
 
-							if (res_p)
+							if (grassroots_results_p)
 								{
-									json_t *grassroots_results_p = json_array ();
 
-									if (grassroots_results_p)
+									size_t i;
+
+									json_array_foreach (results_p, i, ckan_result_p)
 										{
+											json_t *grassroots_result_p = GetResult (ckan_result_p, lucene_p, data_p);
 
-											size_t i;
-
-											json_array_foreach (results_p, i, ckan_result_p)
+											if (grassroots_result_p)
 												{
-													json_t *grassroots_result_p = GetResult (ckan_result_p, lucene_p, data_p);
-
-													if (grassroots_result_p)
+													if (json_array_append_new (grassroots_results_p, grassroots_result_p) != 0)
 														{
-															if (json_array_append_new (grassroots_results_p, grassroots_result_p) != 0)
-																{
-																	PrintJSONToErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, grassroots_result_p, "Failed to add grassroots result");
-																	json_decref (grassroots_result_p);
-																}
-														}
-													else
-														{
-															PrintJSONToErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, ckan_result_p, "Failed to create grassroots result");
+															PrintJSONToErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, ckan_result_p, "Failed to add grassroots result");
 														}
 												}
-
-											return grassroots_results_p;
-										}
-									else
-										{
-											PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "Failed to create grassroots results array");
+											else
+												{
+													PrintJSONToErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, ckan_result_p, "Failed to create grassroots result");
+												}
 										}
 
-								}		/* if (res_p) */
+									return grassroots_results_p;
+								}
 							else
 								{
-									PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "Failed to create json object ()");
+									PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "Failed to create grassroots results array");
 								}
 
 						}
@@ -410,7 +401,7 @@ static json_t *GetResult (const json_t *ckan_result_p, LuceneTool *lucene_p, con
 
 															if (groups_p)
 																{
-																	if (ParseResultGroups (grassroots_result_p, groups_p, lucene_p, data_p))
+																	if (!ParseResultGroups (grassroots_result_p, groups_p, lucene_p, data_p))
 																		{
 																			PrintJSONToErrors (STM_LEVEL_WARNING, __FILE__, __LINE__, groups_p, "ParseResultGroups () failed");
 																		}
